@@ -1,5 +1,6 @@
 // pages/book.js
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 const SQFT_PRICES_BIWEEKLY = [
   { label: "1 - 999 Sq Ft", value: "1-999", price: 92.65 },
@@ -14,300 +15,369 @@ const SQFT_PRICES_BIWEEKLY = [
   { label: "5000 - 5499 Sq Ft", value: "5000-5499", price: 262.65 },
 ];
 
-// Your rule: base prices are for BI-WEEKLY.
-// “more frequent” => down 15%
-// “less frequent” => up 15%
+// Display labels have NO parentheses.
 const FREQUENCY = [
-  { label: "Weekly (−15%)", value: "weekly", multiplier: 0.85 },
-  { label: "Bi-Weekly (base)", value: "biweekly", multiplier: 1.0 },
-  { label: "Every 4 Weeks (+15%)", value: "every4weeks", multiplier: 1.15 },
-  { label: "One-Time (+15%)", value: "onetime", multiplier: 1.15 },
+  { label: "Weekly", value: "weekly", multiplier: 0.85 },
+  { label: "Every Other Week", value: "biweekly", multiplier: 1.0 }, // base
+  { label: "Every 4 Weeks", value: "monthly", multiplier: 1.15 },
 ];
 
-// Extras pricing per your notes
-const EXTRA_DEEP_OR_MOVE = 40;
-const EXTRA_STANDARD = 25; // use 20 if you prefer; adjust as needed
+const ADDONS = [
+  { id: "deep_clean", name: "Deep Cleaning", price: 40 },
+  { id: "move_in_out", name: "Move In / Move Out", price: 40 },
 
-const EXTRAS = [
-  { key: "deep_clean", label: "Deep Cleaning", add: EXTRA_DEEP_OR_MOVE },
-  { key: "move_in_out", label: "Move In / Out", add: EXTRA_DEEP_OR_MOVE },
-  { key: "inside_cabinets", label: "Inside Cabinets", add: EXTRA_STANDARD },
-  { key: "interior_windows", label: "Interior Windows", add: EXTRA_STANDARD },
-  { key: "inside_fridge", label: "Inside Fridge", add: EXTRA_STANDARD },
-  { key: "inside_oven", label: "Inside Oven", add: EXTRA_STANDARD },
-  { key: "green_cleaning", label: "Green Cleaning", add: EXTRA_STANDARD },
-  { key: "organization", label: "Organization", add: EXTRA_STANDARD },
-  { key: "laundry_folding", label: "Laundry & Folding", add: EXTRA_STANDARD },
-  { key: "dishes", label: "Dishes", add: EXTRA_STANDARD },
+  // Extras (no prices displayed; added to total)
+  { id: "inside_cabinets", name: "Inside Cabinets", price: 25 },
+  { id: "inside_fridge", name: "Inside Fridge", price: 25 },
+  { id: "inside_oven", name: "Inside Oven", price: 25 },
+  { id: "interior_windows", name: "Interior Windows", price: 25 },
+  { id: "wet_wipe_blinds", name: "Wet Wipe Window Blinds", price: 25 },
+  { id: "organization", name: "Organization", price: 25 },
+  { id: "laundry_folding", name: "Laundry & Folding", price: 25 },
+  { id: "dishes", name: "Dishes", price: 20 },
+  { id: "green_cleaning", name: "Green Cleaning", price: 20 },
 ];
 
 function money(n) {
+  if (typeof n !== "number" || Number.isNaN(n)) return "$0.00";
   return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
 export default function BookPage() {
-  // customer details
+  const BUSINESS = {
+    name: "GB Solutions",
+    tagline: "House Cleaning • Seattle & Bellevue",
+  };
+
+  const [frequency, setFrequency] = useState("biweekly");
+  const [sqft, setSqft] = useState("1-999");
+  const [bedrooms, setBedrooms] = useState("0");
+  const [bathrooms, setBathrooms] = useState("1");
+  const [zip, setZip] = useState("");
+  const [addons, setAddons] = useState(() => new Set());
+
+  // Contact: phone required, email optional
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-
-  // EMAIL OPTIONAL
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
-  // PHONE REQUIRED
-  const [phone, setPhone] = useState("");
+  const baseBiweekly = useMemo(() => {
+    const row = SQFT_PRICES_BIWEEKLY.find((r) => r.value === sqft);
+    return row ? row.price : 0;
+  }, [sqft]);
 
-  const [sqft, setSqft] = useState(SQFT_PRICES_BIWEEKLY[0].value);
-  const [frequency, setFrequency] = useState("biweekly");
+  const freqMultiplier = useMemo(() => {
+    const row = FREQUENCY.find((f) => f.value === frequency);
+    return row ? row.multiplier : 1.0;
+  }, [frequency]);
 
-  const [extras, setExtras] = useState(() =>
-    Object.fromEntries(EXTRAS.map((e) => [e.key, false]))
-  );
-
-  const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-
-  const selectedSqft = useMemo(
-    () => SQFT_PRICES_BIWEEKLY.find((x) => x.value === sqft),
-    [sqft]
-  );
-
-  const selectedFreq = useMemo(
-    () => FREQUENCY.find((f) => f.value === frequency),
-    [frequency]
-  );
-
-  const extrasTotal = useMemo(() => {
-    return EXTRAS.reduce((sum, e) => (extras[e.key] ? sum + e.add : sum), 0);
-  }, [extras]);
+  const addonsTotal = useMemo(() => {
+    let total = 0;
+    for (const id of addons) {
+      const item = ADDONS.find((a) => a.id === id);
+      if (item) total += item.price;
+    }
+    return total;
+  }, [addons]);
 
   const total = useMemo(() => {
-    const base = selectedSqft?.price ?? 0;
-    const mult = selectedFreq?.multiplier ?? 1;
-    return (base + extrasTotal) * mult;
-  }, [selectedSqft, selectedFreq, extrasTotal]);
+    const adjustedBase = baseBiweekly * freqMultiplier;
+    return Math.round((adjustedBase + addonsTotal) * 100) / 100;
+  }, [baseBiweekly, freqMultiplier, addonsTotal]);
 
-  function validate() {
-    const nextErrors = {};
-
-    // Phone REQUIRED
-    const digitsOnly = phone.replace(/\D/g, "");
-    if (!digitsOnly) nextErrors.phone = "Phone number is required.";
-    else if (digitsOnly.length < 10) nextErrors.phone = "Enter a valid phone number.";
-
-    // Email OPTIONAL, but if present it must be valid-looking
-    if (email.trim().length > 0) {
-      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-      if (!ok) nextErrors.email = "Enter a valid email or leave blank.";
-    }
-
-    // Optional: require names (remove if you don’t want)
-    if (!firstName.trim()) nextErrors.firstName = "First name is required.";
-    if (!lastName.trim()) nextErrors.lastName = "Last name is required.";
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+  function toggleAddon(id) {
+    setAddons((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
-  function toggleExtra(key) {
-    setExtras((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
+  const isPhoneValid = phone.trim().length >= 7; // basic client-side check
 
-  async function onSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    setSubmitted(false);
+    if (!isPhoneValid) return;
 
-    if (!validate()) return;
-
-    // If you want to send this somewhere, create an API route and POST to it.
-    // For now, this is a front-end validation + “success” state.
-    setSubmitted(true);
+    // Demo-only: no backend included.
+    // You can replace this with email API / form service later.
+    alert("Saved (demo). Add a backend to actually receive bookings.");
   }
 
   return (
-    <div className="bk-wrap">
-      <div className="bk-grid">
-        <main className="bk-main">
-          <h1 className="bk-title">Book Online</h1>
-
-          <form onSubmit={onSubmit} className="bk-card">
-            <section className="bk-section">
-              <h2 className="bk-h2">Frequency</h2>
-              <div className="bk-row">
-                <select
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  className="bk-select"
-                >
-                  {FREQUENCY.map((f) => (
-                    <option key={f.value} value={f.value}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
+    <>
+      {/* Header copied from Home layout; brand goes back to home page */}
+      <header className="header">
+        <div className="container">
+          <div className="nav">
+            <Link className="brand" href="/" aria-label="GB Solutions home">
+              {/* Put your transparent logo in: /public/logo.png */}
+              <img
+                src="/logo.png"
+                alt="GB Solutions"
+                style={{ width: 38, height: 38, objectFit: "contain" }}
+              />
+              <div className="brandText" style={{ marginLeft: 10 }}>
+                <b>{BUSINESS.name}</b>
+                <span>{BUSINESS.tagline}</span>
               </div>
-            </section>
+            </Link>
 
-            <section className="bk-section">
-              <h2 className="bk-h2">Home Size</h2>
-              <div className="bk-row">
-                <select
-                  value={sqft}
-                  onChange={(e) => setSqft(e.target.value)}
-                  className="bk-select"
-                >
-                  {SQFT_PRICES_BIWEEKLY.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label} ({money(s.price)} bi-weekly)
-                    </option>
-                  ))}
-                </select>
+            <nav className="links" aria-label="Primary">
+              <Link href="/#services">Services</Link>
+              <Link href="/#pricing">Pricing</Link>
+              <Link href="/#process">Process</Link>
+              <Link href="/#faq">FAQ</Link>
+              <Link href="/#contact">Contact</Link>
+            </nav>
+
+            <div className="navCtas">
+              <Link className="btn btnGhost" href="/book">
+                Get a Quote
+              </Link>
+              <Link className="btn btnPrimary" href="/book">
+                Book Now
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main style={{ paddingTop: 84 }}>
+        <section className="section" style={{ paddingTop: 16 }}>
+          <div className="container">
+            <div className="sectionHead">
+              <div>
+                <h2>Book Online</h2>
+                <p>Select options to get an instant total.</p>
               </div>
-            </section>
+            </div>
 
-            <section className="bk-section">
-              <h2 className="bk-h2">Extras</h2>
-              <div className="bk-extras">
-                {EXTRAS.map((e) => (
-                  <label key={e.key} className="bk-extra">
-                    <input
-                      type="checkbox"
-                      checked={!!extras[e.key]}
-                      onChange={() => toggleExtra(e.key)}
-                    />
-                    <span>{e.label}</span>
-                    <span className="bk-extra-price">+{money(e.add)}</span>
-                  </label>
-                ))}
-              </div>
-            </section>
+            <div className="split">
+              {/* Left: form */}
+              <div className="priceCard">
+                <h3>What needs to be done?</h3>
 
-            <section className="bk-section">
-              <h2 className="bk-h2">Customer Details</h2>
-
-              <div className="bk-two">
-                <div>
-                  <label className="bk-label">First name</label>
-                  <input
-                    className="bk-input"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="First name"
-                  />
-                  {errors.firstName && <div className="bk-err">{errors.firstName}</div>}
+                <div style={{ marginTop: 14 }}>
+                  <div className="small" style={{ marginBottom: 8 }}>
+                    Frequency
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {FREQUENCY.map((f) => (
+                      <button
+                        key={f.value}
+                        type="button"
+                        className={frequency === f.value ? "btn btnPrimary" : "btn"}
+                        onClick={() => setFrequency(f.value)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="bk-label">Last name</label>
+                <div style={{ marginTop: 16 }} className="row">
+                  <div style={{ flex: 1 }}>
+                    <div className="small" style={{ marginBottom: 6 }}>
+                      Bedrooms
+                    </div>
+                    <select value={bedrooms} onChange={(e) => setBedrooms(e.target.value)}>
+                      {Array.from({ length: 11 }).map((_, i) => (
+                        <option key={i} value={String(i)}>
+                          {i}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div className="small" style={{ marginBottom: 6 }}>
+                      Bathrooms
+                    </div>
+                    <select value={bathrooms} onChange={(e) => setBathrooms(e.target.value)}>
+                      {Array.from({ length: 11 }).map((_, i) => (
+                        <option key={i} value={String(i)}>
+                          {i}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <div className="small" style={{ marginBottom: 6 }}>
+                    Sq Ft
+                  </div>
+                  <select value={sqft} onChange={(e) => setSqft(e.target.value)}>
+                    {SQFT_PRICES_BIWEEKLY.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ marginTop: 12 }}>
+                  <div className="small" style={{ marginBottom: 6 }}>
+                    Zip Code
+                  </div>
                   <input
-                    className="bk-input"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Last name"
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    placeholder="Zip code"
+                    inputMode="numeric"
                   />
-                  {errors.lastName && <div className="bk-err">{errors.lastName}</div>}
+                </div>
+
+                <div style={{ marginTop: 18 }}>
+                  <h3 style={{ marginBottom: 8 }}>Select extras</h3>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    {ADDONS.map((a) => {
+                      const active = addons.has(a.id);
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className={active ? "btn btnPrimary" : "btn"}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "12px 12px",
+                            height: 48,
+                          }}
+                          onClick={() => toggleAddon(a.id)}
+                        >
+                          <span>{a.name}</span>
+                          <span aria-hidden="true">{active ? "✓" : "+"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 18 }}>
+                  <h3 style={{ marginBottom: 8 }}>Customer details</h3>
+
+                  <form className="form" onSubmit={handleSubmit}>
+                    <div className="row">
+                      <input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                      />
+                      <input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                      />
+                    </div>
+
+                    <div className="row">
+                      <input
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email (optional)"
+                        type="email"
+                      />
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Phone (required)"
+                        required
+                      />
+                    </div>
+
+                    <button className="btn btnPrimary" type="submit" disabled={!isPhoneValid}>
+                      Save Booking
+                    </button>
+
+                    {!isPhoneValid && (
+                      <div className="small" style={{ marginTop: 8 }}>
+                        Phone number is required.
+                      </div>
+                    )}
+                  </form>
                 </div>
               </div>
 
-              <div className="bk-two">
-                <div>
-                  <label className="bk-label">Email (optional)</label>
-                  <input
-                    className="bk-input"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@email.com"
-                  />
-                  {errors.email && <div className="bk-err">{errors.email}</div>}
+              {/* Right: summary */}
+              <div className="priceCard" style={{ height: "fit-content" }}>
+                <h3>Booking Summary</h3>
+
+                <div className="miniList" style={{ marginTop: 10 }}>
+                  <div className="miniItem">
+                    <span className="tick">•</span>
+                    <span>Frequency: {FREQUENCY.find((f) => f.value === frequency)?.label}</span>
+                  </div>
+                  <div className="miniItem">
+                    <span className="tick">•</span>
+                    <span>Bedrooms: {bedrooms}</span>
+                  </div>
+                  <div className="miniItem">
+                    <span className="tick">•</span>
+                    <span>Bathrooms: {bathrooms}</span>
+                  </div>
+                  <div className="miniItem">
+                    <span className="tick">•</span>
+                    <span>Sq Ft: {SQFT_PRICES_BIWEEKLY.find((s) => s.value === sqft)?.label}</span>
+                  </div>
+                  <div className="miniItem">
+                    <span className="tick">•</span>
+                    <span>Zip: {zip || "—"}</span>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="bk-label">Phone (required)</label>
-                  <input
-                    className="bk-input"
-                    inputMode="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(555) 555-5555"
-                    // HTML-level required as well (still keep JS validate)
-                    required
-                  />
-                  {errors.phone && <div className="bk-err">{errors.phone}</div>}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div className="small">Base</div>
+                    <div className="small">{money(Math.round(baseBiweekly * freqMultiplier * 100) / 100)}</div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                    <div className="small">Extras</div>
+                    <div className="small">{money(addonsTotal)}</div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                    <div style={{ fontWeight: 800 }}>TOTAL</div>
+                    <div style={{ fontWeight: 800 }}>{money(total)}</div>
+                  </div>
+
+                  <div className="small" style={{ marginTop: 8 }}>
+                    Total updates when you select options.
+                  </div>
                 </div>
-              </div>
-            </section>
 
-            <button type="submit" className="bk-btn">
-              Save Booking
-            </button>
-
-            {submitted && (
-              <div className="bk-ok">
-                Validated. Next step: send this booking to your backend/payment processor.
-              </div>
-            )}
-          </form>
-        </main>
-
-        <aside className="bk-side">
-          <div className="bk-card">
-            <h3 className="bk-h3">Booking Summary</h3>
-            <div className="bk-sum">
-              <div className="bk-sum-row">
-                <span>Frequency</span>
-                <span>{FREQUENCY.find((f) => f.value === frequency)?.label}</span>
-              </div>
-              <div className="bk-sum-row">
-                <span>Sq Ft</span>
-                <span>{SQFT_PRICES_BIWEEKLY.find((s) => s.value === sqft)?.label}</span>
-              </div>
-              <div className="bk-sum-row">
-                <span>Extras</span>
-                <span>{money(extrasTotal)}</span>
-              </div>
-              <div className="bk-line" />
-              <div className="bk-sum-total">
-                <span>Total</span>
-                <span>{money(total)}</span>
+                {addons.size > 0 && (
+                  <div style={{ marginTop: 14 }}>
+                    <div className="small" style={{ marginBottom: 6 }}>
+                      Selected extras
+                    </div>
+                    <ul className="ul">
+                      {[...addons].map((id) => {
+                        const item = ADDONS.find((a) => a.id === id);
+                        return item ? (
+                          <li key={id}>
+                            <span className="dot" /> <span>{item.name}</span>
+                          </li>
+                        ) : null;
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </aside>
-      </div>
-
-      <style jsx>{`
-        .bk-wrap { max-width: 1100px; margin: 40px auto; padding: 0 16px; }
-        .bk-grid { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
-        @media (max-width: 980px) { .bk-grid { grid-template-columns: 1fr; } }
-
-        .bk-title { margin: 0 0 16px; font-size: 32px; }
-        .bk-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; }
-        .bk-section { padding: 12px 0; border-top: 1px solid #f1f5f9; }
-        .bk-section:first-child { border-top: 0; }
-        .bk-h2 { margin: 0 0 10px; font-size: 16px; }
-        .bk-h3 { margin: 0 0 10px; font-size: 16px; }
-        .bk-row { display: flex; gap: 12px; }
-        .bk-select, .bk-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; }
-        .bk-label { display: block; font-size: 12px; margin: 8px 0 6px; color: #475569; }
-        .bk-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 640px) { .bk-two { grid-template-columns: 1fr; } }
-
-        .bk-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        @media (max-width: 640px) { .bk-extras { grid-template-columns: 1fr; } }
-        .bk-extra { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 12px; }
-        .bk-extra input { margin-right: 10px; }
-        .bk-extra span:first-of-type { flex: 1; }
-        .bk-extra-price { color: #0f766e; font-weight: 600; }
-
-        .bk-btn { width: 100%; margin-top: 12px; padding: 12px; border-radius: 12px; border: 0; background: #0ea5e9; color: white; font-weight: 700; cursor: pointer; }
-        .bk-err { margin-top: 6px; color: #b91c1c; font-size: 12px; }
-        .bk-ok { margin-top: 10px; font-size: 13px; color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 10px 12px; border-radius: 12px; }
-
-        .bk-sum { font-size: 14px; }
-        .bk-sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; color: #334155; }
-        .bk-line { height: 1px; background: #e5e7eb; margin: 10px 0; }
-        .bk-sum-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; }
-      `}</style>
-    </div>
+        </section>
+      </main>
+    </>
   );
 }
