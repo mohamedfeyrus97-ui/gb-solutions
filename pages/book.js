@@ -87,7 +87,7 @@ export default function BookPage() {
     const adjustedBase = baseBiweekly * freqMultiplier;
     return Math.round((adjustedBase + addonsTotal) * 100) / 100;
   }, [baseBiweekly, freqMultiplier, addonsTotal]);
-
+  
   function toggleAddon(id) {
     setAddons((prev) => {
       const next = new Set(prev);
