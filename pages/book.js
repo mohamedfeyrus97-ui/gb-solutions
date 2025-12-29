@@ -21,7 +21,7 @@ const FREQUENCY = [
   { label: "One-Time", value: "onetime", multiplier: 1.15 },
   { label: "Weekly", value: "weekly", multiplier: 0.85 },
   { label: "Every Other Week", value: "biweekly", multiplier: 1.0 },
-  { label: "Every 4 Weeks", value: "monthly", multiplier: 1.15 }, // change this if you want
+  { label: "Every 4 Weeks", value: "monthly", multiplier: 1.1 }, // change this if you want
 ];
 
 const ADDONS = [
