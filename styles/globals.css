@@ -378,3 +378,6 @@ textarea{ min-height: 110px; resize: vertical; }
   .links{ display:none; }
   .row{ grid-template-columns: 1fr; }
 }
+/* styles/globals.css (ensure file is at /styles/globals.css) */
+html, body { padding: 0; margin: 0; background: #f8fafc; }
+* { box-sizing: border-box; }
