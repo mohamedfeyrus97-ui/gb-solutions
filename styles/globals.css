@@ -381,3 +381,23 @@ textarea{ min-height: 110px; resize: vertical; }
 /* styles/globals.css (ensure file is at /styles/globals.css) */
 html, body { padding: 0; margin: 0; background: #f8fafc; }
 * { box-sizing: border-box; }
+/* Header logo */
+.logoImg{
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-decoration:none;
+  color: inherit;
+}
+
+.brandText{
+  display:flex;
+  flex-direction:column;
+  line-height:1.1;
+}
