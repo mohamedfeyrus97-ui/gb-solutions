@@ -26,6 +26,14 @@ export default async function handler(req, res) {
   try {
     // Public: create booking
     if (req.method === "POST") {
+      const body = req.body || {};
+
+      // accept BOTH naming styles (camelCase and snake_case)
+      const totalCentsRaw =
+        body.totalCents ?? body.total_cents ?? body.total_cents?.toString?.();
+      const partialCleaningRaw = body.partialCleaning ?? body.partial_cleaning ?? {};
+      const extrasRaw = body.extras ?? {};
+
       const {
         name,
         phone,
@@ -35,12 +43,11 @@ export default async function handler(req, res) {
         bathrooms,
         sqft,
         zip,
-        extras,
-        partialCleaning,
-        totalCents,
-      } = req.body || {};
+      } = body;
 
       if (!phone) return res.status(400).json({ error: "phone required" });
+
+      const totalCents = Number(totalCentsRaw || 0);
 
       const q = `
         INSERT INTO bookings
@@ -59,9 +66,9 @@ export default async function handler(req, res) {
         Number(bathrooms || 0),
         String(sqft || "1-999"),
         String(zip || ""),
-        extras || {},
-        partialCleaning || {},
-        Number(totalCents || 0),
+        extrasRaw || {},
+        partialCleaningRaw || {},
+        Number.isFinite(totalCents) ? totalCents : 0,
       ];
 
       const result = await pool.query(q, values);
