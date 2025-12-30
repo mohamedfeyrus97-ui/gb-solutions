@@ -152,7 +152,9 @@ export default function Book() {
     setPartialSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  // ✅ ONLY CHANGE: onSave updated to match /pages/api/bookings.js expected fields
+  // ONLY CHANGE vs your pasted version:
+  // - partial_cleaning -> partialCleaning
+  // - total_cents -> totalCents
   async function onSave(e) {
     e.preventDefault();
     if (!phone.trim()) return;
@@ -161,14 +163,14 @@ export default function Book() {
       name: `${firstName} ${lastName}`.trim(),
       phone: phone.trim(),
       email: email.trim() || null,
-      frequency, // keep as your existing values (one_time/weekly/biweekly/every_4_weeks)
+      frequency,
       bedrooms: Number(bedrooms),
       bathrooms: Number(bathrooms),
-      sqft, // keep as your existing values (1-999, 1000-1499, etc.)
+      sqft,
       zip: zip.trim() || null,
       extras: extrasSelected,
-      partial_cleaning: partialEnabled ? partialSelected : {},
-      total_cents: Math.round(priceBreakdown.total * 100),
+      partialCleaning: partialEnabled ? partialSelected : {},
+      totalCents: Math.round(priceBreakdown.total * 100),
     };
 
     const res = await fetch("/api/bookings", {
@@ -265,13 +267,7 @@ export default function Book() {
 
                 {/* Frequency */}
                 <div style={{ marginTop: 14 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--muted, #666)",
-                      marginBottom: 8,
-                    }}
-                  >
+                  <div style={{ fontSize: 12, color: "var(--muted, #666)", marginBottom: 8 }}>
                     Frequency
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -287,9 +283,7 @@ export default function Book() {
                             border: "1px solid var(--border, rgba(0,0,0,.1))",
                             borderRadius: 999,
                             padding: "8px 12px",
-                            background: active
-                              ? "var(--primary, #0f766e)"
-                              : "rgba(255,255,255,.8)",
+                            background: active ? "var(--primary, #0f766e)" : "rgba(255,255,255,.8)",
                             color: active ? "#fff" : "var(--text, #111)",
                             cursor: "pointer",
                             fontSize: 13,
@@ -304,24 +298,9 @@ export default function Book() {
                 </div>
 
                 {/* Bedrooms / Bathrooms */}
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                  }}
-                >
+                <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--muted, #666)",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Bedrooms
-                    </div>
+                    <div style={{ fontSize: 12, color: "var(--muted, #666)", marginBottom: 6 }}>Bedrooms</div>
                     <select
                       value={bedrooms}
                       onChange={(e) => setBedrooms(Number(e.target.value))}
@@ -336,15 +315,7 @@ export default function Book() {
                   </div>
 
                   <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--muted, #666)",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Bathrooms
-                    </div>
+                    <div style={{ fontSize: 12, color: "var(--muted, #666)", marginBottom: 6 }}>Bathrooms</div>
                     <select
                       value={bathrooms}
                       onChange={(e) => setBathrooms(Number(e.target.value))}
@@ -361,15 +332,7 @@ export default function Book() {
 
                 {/* Sq Ft */}
                 <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--muted, #666)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Sq Ft
-                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted, #666)", marginBottom: 6 }}>Sq Ft</div>
                   <select
                     value={sqft}
                     onChange={(e) => setSqft(e.target.value)}
@@ -385,15 +348,7 @@ export default function Book() {
 
                 {/* Zip */}
                 <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--muted, #666)",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Zip code
-                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted, #666)", marginBottom: 6 }}>Zip code</div>
                   <input
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
@@ -404,14 +359,7 @@ export default function Book() {
 
                 {/* Partial cleaning (collapsed) */}
                 <div style={{ marginTop: 14 }}>
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      cursor: "pointer",
-                    }}
-                  >
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
                     <input
                       type="checkbox"
                       checked={partialEnabled}
@@ -425,9 +373,7 @@ export default function Book() {
                       }}
                       style={{ width: 18, height: 18 }}
                     />
-                    <span style={{ fontWeight: 700 }}>
-                      This Is Partial Cleaning Only
-                    </span>
+                    <span style={{ fontWeight: 700 }}>This Is Partial Cleaning Only</span>
                   </label>
 
                   {partialEnabled && (
@@ -446,20 +392,12 @@ export default function Book() {
                           fontWeight: 700,
                         }}
                       >
-                        Select what doesn’t need to be done{" "}
-                        {partialOpen ? "▲" : "▼"}
+                        Select what doesn’t need to be done {partialOpen ? "▲" : "▼"}
                       </button>
 
                       {partialOpen && (
                         <div style={{ marginTop: 10 }}>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(3, minmax(0, 1fr))",
-                              gap: 10,
-                            }}
-                          >
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
                             {PARTIAL_OPTIONS.map((p) => {
                               const on = !!partialSelected[p.key];
                               return (
@@ -470,11 +408,8 @@ export default function Book() {
                                   style={{
                                     padding: 12,
                                     borderRadius: 12,
-                                    border:
-                                      "1px solid var(--border, rgba(0,0,0,.1))",
-                                    background: on
-                                      ? "rgba(15,118,110,.10)"
-                                      : "rgba(255,255,255,.75)",
+                                    border: "1px solid var(--border, rgba(0,0,0,.1))",
+                                    background: on ? "rgba(15,118,110,.10)" : "rgba(255,255,255,.75)",
                                     cursor: "pointer",
                                     fontWeight: 700,
                                     fontSize: 13,
@@ -486,13 +421,7 @@ export default function Book() {
                             })}
                           </div>
 
-                          <div
-                            style={{
-                              marginTop: 8,
-                              fontSize: 12,
-                              color: "var(--muted, #666)",
-                            }}
-                          >
+                          <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted, #666)" }}>
                             Discount applied automatically to total when selected.
                           </div>
                         </div>
@@ -503,17 +432,9 @@ export default function Book() {
 
                 {/* Extras */}
                 <div style={{ marginTop: 16 }}>
-                  <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>
-                    Select extras
-                  </h3>
+                  <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Select extras</h3>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                    }}
-                  >
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {EXTRAS.map((e) => {
                       const on = !!extrasSelected[e.key];
                       return (
@@ -527,20 +448,15 @@ export default function Book() {
                             justifyContent: "space-between",
                             padding: "12px 12px",
                             borderRadius: 14,
-                            border:
-                              "1px solid var(--border, rgba(0,0,0,.1))",
-                            background: on
-                              ? "rgba(15,118,110,.10)"
-                              : "rgba(255,255,255,.75)",
+                            border: "1px solid var(--border, rgba(0,0,0,.1))",
+                            background: on ? "rgba(15,118,110,.10)" : "rgba(255,255,255,.75)",
                             cursor: "pointer",
                             fontWeight: 700,
                             fontSize: 13,
                           }}
                         >
                           <span>{e.label}</span>
-                          <span style={{ fontWeight: 900, fontSize: 16 }}>
-                            {on ? "−" : "+"}
-                          </span>
+                          <span style={{ fontWeight: 900, fontSize: 16 }}>{on ? "−" : "+"}</span>
                         </button>
                       );
                     })}
@@ -549,17 +465,9 @@ export default function Book() {
 
                 {/* Customer details */}
                 <form onSubmit={onSave} style={{ marginTop: 18 }}>
-                  <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>
-                    Customer details
-                  </h3>
+                  <h3 style={{ margin: "0 0 10px", fontSize: 16 }}>Customer details</h3>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                    }}
-                  >
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <input
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
@@ -574,14 +482,7 @@ export default function Book() {
                     />
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 10,
-                      marginTop: 10,
-                    }}
-                  >
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -597,22 +498,12 @@ export default function Book() {
                     />
                   </div>
 
-                  <button
-                    className="btn btnPrimary"
-                    type="submit"
-                    style={{ width: "100%", marginTop: 14 }}
-                  >
+                  <button className="btn btnPrimary" type="submit" style={{ width: "100%", marginTop: 14 }}>
                     Save Booking
                   </button>
 
                   {!phone.trim() && (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        color: "var(--muted, #666)",
-                      }}
-                    >
+                    <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted, #666)" }}>
                       Phone number is required.
                     </div>
                   )}
@@ -637,103 +528,39 @@ export default function Book() {
 
                 <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: "rgba(15,118,110,.35)",
-                      }}
-                    />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "rgba(15,118,110,.35)" }} />
                     <span>Frequency: {freqObj.label}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: "rgba(15,118,110,.35)",
-                      }}
-                    />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "rgba(15,118,110,.35)" }} />
                     <span>Bedrooms: {bedrooms}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: "rgba(15,118,110,.35)",
-                      }}
-                    />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "rgba(15,118,110,.35)" }} />
                     <span>Bathrooms: {bathrooms}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: "rgba(15,118,110,.35)",
-                      }}
-                    />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "rgba(15,118,110,.35)" }} />
                     <span>Sq Ft: {sqftObj.label}</span>
                   </div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: "rgba(15,118,110,.35)",
-                      }}
-                    />
+                    <span style={{ width: 10, height: 10, borderRadius: 999, background: "rgba(15,118,110,.35)" }} />
                     <span>Zip: {zip ? zip : "—"}</span>
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: 14,
-                    borderTop: "1px solid var(--border, rgba(0,0,0,.1))",
-                    paddingTop: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 6,
-                    }}
-                  >
+                <div style={{ marginTop: 14, borderTop: "1px solid var(--border, rgba(0,0,0,.1))", paddingTop: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span>Base</span>
                     <b>{money(priceBreakdown.base)}</b>
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                    }}
-                  >
-                    <span style={{ fontWeight: 900, letterSpacing: 0.2 }}>
-                      TOTAL
-                    </span>
-                    <span style={{ fontWeight: 900, fontSize: 20 }}>
-                      {money(priceBreakdown.total)}
-                    </span>
+                  <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <span style={{ fontWeight: 900, letterSpacing: 0.2 }}>TOTAL</span>
+                    <span style={{ fontWeight: 900, fontSize: 20 }}>{money(priceBreakdown.total)}</span>
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: 6,
-                      fontSize: 12,
-                      color: "var(--muted, #666)",
-                    }}
-                  >
+                  <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted, #666)" }}>
                     Total updates when you select options.
                   </div>
                 </div>
