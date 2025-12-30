@@ -6,6 +6,20 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+function requireAdmin(req, res) {
+  const token =
+    req.headers["x-admin-token"] ||
+    (req.headers.authorization || "").replace("Bearer ", "");
+
+  if (!process.env.ADMIN_TOKEN) return false;
+
+  if (token !== process.env.ADMIN_TOKEN) {
+    res.status(401).json({ error: "Unauthorized" });
+    return true; // handled
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method === "POST") {
@@ -50,10 +64,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
+      if (requireAdmin(req, res)) return;
       const result = await pool.query(
         `SELECT * FROM bookings ORDER BY created_at DESC NULLS LAST, id DESC;`
       );
-      // IMPORTANT: return an array (admin page expects an array)
       return res.status(200).json(result.rows);
     }
 
