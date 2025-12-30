@@ -14,7 +14,7 @@ const SQFT_PRICES_BIWEEKLY = [
   { label: "5000 - 5499 Sq Ft", value: "5000-5499", price: 262.65 },
 ];
 
-// Rule from you: prices above are for BI-WEEKLY.
+// Prices above are for BI-WEEKLY.
 // More frequent => -15%. Less frequent => +15%.
 const FREQUENCY = [
   { label: "One-Time", value: "one_time", multiplier: 1.15 },
@@ -121,14 +121,10 @@ export default function Book() {
 
     return {
       base,
-      bedroomsAdd,
-      bathroomsAdd,
       adjustments,
       extras,
       discounts,
       total,
-      fullBaths,
-      hasHalf: half === 1,
     };
   }, [sqftObj, freqObj, bedrooms, bathrooms, extrasSelected, partialEnabled, partialSelected]);
 
@@ -140,23 +136,37 @@ export default function Book() {
     setPartialSelected((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function onSave(e) {
+  async function onSave(e) {
     e.preventDefault();
     if (!phone.trim()) return;
 
-    // No backend in this project; keep it simple.
-    const summary = {
-      frequency: freqObj.label,
-      bedrooms,
-      bathrooms,
-      sqft: sqftObj.label,
-      zip,
-      total: money(priceBreakdown.total),
-      name: `${firstName} ${lastName}`.trim(),
-      phone,
-      email: email || "(not provided)",
-    };
-    alert(`Booking saved (demo):\n\n${JSON.stringify(summary, null, 2)}`);
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: `${firstName} ${lastName}`.trim(),
+        phone,
+        email,
+        frequency,
+        bedrooms,
+        bathrooms,
+        sqft,
+        zip,
+        extras: extrasSelected,
+        partialCleaning: partialSelected,
+        totalCents: Math.round(priceBreakdown.total * 100),
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Failed to save booking");
+      return;
+    }
+
+    // optional: clear form after success
+    // setFirstName(""); setLastName(""); setEmail(""); setPhone("");
+
+    alert("Booking submitted successfully");
   }
 
   const selectedExtrasList = useMemo(() => {
@@ -170,7 +180,7 @@ export default function Book() {
 
   return (
     <>
-      {/* Header (same style as home page). Logo must be placed at /public/gb-logo.png */}
+      {/* Header. Logo must exist at /public/gb-logo.png */}
       <header className="header">
         <div className="container">
           <div className="nav">
@@ -214,7 +224,6 @@ export default function Book() {
 
       <main style={{ padding: "22px 0 44px" }}>
         <div className="container">
-          {/* Layout matches the “old” look: left form, right summary */}
           <div
             className="bookGrid"
             style={{
@@ -533,21 +542,6 @@ export default function Book() {
                     <b>{money(priceBreakdown.base)}</b>
                   </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span>Bedrooms/Bathrooms</span>
-                    <b>{money(priceBreakdown.adjustments)}</b>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span>Extras</span>
-                    <b>{money(priceBreakdown.extras)}</b>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span>Partial cleaning discounts</span>
-                    <b>-{money(priceBreakdown.discounts)}</b>
-                  </div>
-
                   <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                     <span style={{ fontWeight: 900, letterSpacing: 0.2 }}>TOTAL</span>
                     <span style={{ fontWeight: 900, fontSize: 20 }}>{money(priceBreakdown.total)}</span>
@@ -576,7 +570,6 @@ export default function Book() {
             </div>
           </div>
 
-          {/* small responsive fallback */}
           <style jsx>{`
             @media (max-width: 920px) {
               .bookGrid {
